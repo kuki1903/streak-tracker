@@ -17,7 +17,6 @@ body {
     padding: 20px;
 }
 
-/* Header */
 .header {
     display: flex;
     justify-content: space-between;
@@ -39,7 +38,6 @@ body {
     text-align: center;
 }
 
-/* Layout */
 .main {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -47,39 +45,44 @@ body {
     margin-top: 20px;
 }
 
-/* Heatmap */
 .heatmap {
     background: #1e293b;
     padding: 20px;
     border-radius: 12px;
 }
 
+.months {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 10px;
+    color: #94a3b8;
+}
+
 .grid {
     display: grid;
-    grid-template-columns: repeat(30, 12px);
-    gap: 6px;
-    margin-top: 15px;
+    grid-template-columns: repeat(53, 12px);
+    grid-auto-rows: 12px;
+    gap: 4px;
 }
 
 .cell {
     width: 12px;
     height: 12px;
     background: #334155;
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
 .cell.active {
     background: #22c55e;
 }
 
-/* Side panel */
 .panel {
     background: #1e293b;
     padding: 20px;
     border-radius: 12px;
 }
 
-/* Action box */
 .action {
     background: #1e293b;
     padding: 25px;
@@ -97,15 +100,8 @@ button {
     cursor: pointer;
 }
 
-.success {
-    background: #22c55e;
-    color: white;
-}
-
-.fail {
-    background: #ef4444;
-    color: white;
-}
+.success { background: #22c55e; color: white; }
+.fail { background: #ef4444; color: white; }
 </style>
 </head>
 
@@ -113,47 +109,45 @@ button {
 
 <div class="container">
 
-    <!-- Header -->
-    <div class="header">
-        <div>
-            <h2>🚫 Insta-Free Tracker</h2>
-            <p>Your discipline dashboard</p>
-        </div>
-
-        <div class="stats">
-            <div class="stat">
-                CURRENT<br><b id="current">0</b>
-            </div>
-            <div class="stat">
-                MAX<br><b id="max">0</b>
-            </div>
-        </div>
+<div class="header">
+    <div>
+        <h2>🚫 Insta-Free Tracker</h2>
+        <p>Your discipline dashboard</p>
     </div>
 
-    <!-- Main -->
-    <div class="main">
-
-        <div class="heatmap">
-            <h3>Activity</h3>
-            <div id="grid" class="grid"></div>
+    <div class="stats">
+        <div class="stat">
+            CURRENT<br><b id="current">0</b>
         </div>
-
-        <div class="panel">
-            <h3>Milestones</h3>
-            <p>🥉 3 days</p>
-            <p>🥈 7 days</p>
-            <p>🥇 14 days</p>
-            <p>🧘 30 days</p>
+        <div class="stat">
+            MAX<br><b id="max">0</b>
         </div>
+    </div>
+</div>
 
+<div class="main">
+
+    <div class="heatmap">
+        <h3>Activity</h3>
+        <div class="months" id="months"></div>
+        <div id="grid" class="grid"></div>
     </div>
 
-    <!-- Action -->
-    <div class="action">
-        <h2>Have you used Instagram today?</h2>
-        <button class="success" onclick="mark(1)">Day Completed ✅</button>
-        <button class="fail" onclick="mark(0)">I failed ❌</button>
+    <div class="panel">
+        <h3>Milestones</h3>
+        <p>🥉 3 days</p>
+        <p>🥈 7 days</p>
+        <p>🥇 14 days</p>
+        <p>🧘 30 days</p>
     </div>
+
+</div>
+
+<div class="action">
+    <h2>Have you used Instagram today?</h2>
+    <button class="success" onclick="mark(1)">Day Completed ✅</button>
+    <button class="fail" onclick="mark(0)">I failed ❌</button>
+</div>
 
 </div>
 
@@ -173,7 +167,6 @@ function mark(val) {
 function currentStreak() {
     let d = new Date();
     let count = 0;
-
     while (true) {
         let key = d.toISOString().split("T")[0];
         if (data[key] === 1) {
@@ -200,19 +193,38 @@ function render() {
     document.getElementById("max").innerText = maxStreak();
 
     const grid = document.getElementById("grid");
+    const monthsDiv = document.getElementById("months");
     grid.innerHTML = "";
+    monthsDiv.innerHTML = "";
 
-    for (let i = 0; i < 120; i++) {
+    let todayDate = new Date();
+    let dates = [];
+
+    for (let i = 364; i >= 0; i--) {
         let d = new Date();
-        d.setDate(d.getDate() - i);
+        d.setDate(todayDate.getDate() - i);
+        dates.push(new Date(d));
+    }
+
+    let currentMonth = -1;
+
+    dates.forEach((d, index) => {
         let key = d.toISOString().split("T")[0];
+
+        if (d.getMonth() !== currentMonth) {
+            currentMonth = d.getMonth();
+            let monthName = d.toLocaleString('default', { month: 'short' });
+            let span = document.createElement("span");
+            span.innerText = monthName;
+            monthsDiv.appendChild(span);
+        }
 
         let div = document.createElement("div");
         div.className = "cell";
         if (data[key] === 1) div.classList.add("active");
 
         grid.appendChild(div);
-    }
+    });
 }
 
 render();
