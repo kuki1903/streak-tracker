@@ -8,23 +8,28 @@
 <style>
 body { margin:0; font-family: Arial, sans-serif; background:#0f172a; color:white; }
 .container { padding:20px; }
-.header { display:flex; justify-content:space-between; align-items:center; background:#1e293b; padding:20px; border-radius:12px; }
-.stats { display:flex; gap:15px; }
-.stat { background:#111827; padding:10px 20px; border-radius:10px; text-align:center; }
+.header { display:flex; justify-content:space-between; align-items:center; }
 
-.heatmap { background:#1e293b; padding:20px; border-radius:12px; margin-top:20px; }
-
-/* SCROLLABLE like LeetCode */
-.scroll {
+/* HEATMAP CONTAINER (centered + proper width) */
+.heatmap-wrapper {
+  margin-top:20px;
   overflow-x:auto;
+}
+
+.heatmap {
+  display:inline-block;
+  background:#1e293b;
+  padding:20px;
+  border-radius:12px;
 }
 
 .months {
   display:flex;
-  font-size:12px;
-  color:#94a3b8;
-  margin-bottom:6px;
   position:relative;
+  height:20px;
+  margin-bottom:6px;
+  color:#94a3b8;
+  font-size:12px;
 }
 
 .months span {
@@ -45,27 +50,25 @@ body { margin:0; font-family: Arial, sans-serif; background:#0f172a; color:white
   background:#334155;
 }
 
-/* RED SCALE */
-.cell.level1 { background:#7f1d1d; }
-.cell.level2 { background:#991b1b; }
-.cell.level3 { background:#b91c1c; }
-.cell.level4 { background:#ef4444; }
-.cell.fail { background:#000000; }
+.cell.active { background:#ef4444; }
+.cell.fail { background:#000; }
 
-.action { background:#1e293b; padding:25px; border-radius:12px; margin-top:20px; text-align:center; }
-button { padding:10px 20px; margin:10px; border:none; border-radius:20px; cursor:pointer; }
+/* CENTER ACTION */
+.action {
+  text-align:center;
+  margin-top:40px;
+}
+
+button {
+  padding:10px 20px;
+  margin:10px;
+  border:none;
+  border-radius:20px;
+  cursor:pointer;
+}
 .success { background:#22c55e; color:white; }
 .failbtn { background:#ef4444; color:white; }
 
-.tooltip {
-  position:fixed;
-  background:#111827;
-  padding:6px 10px;
-  border-radius:6px;
-  font-size:12px;
-  display:none;
-  pointer-events:none;
-}
 </style>
 </head>
 
@@ -74,18 +77,11 @@ button { padding:10px 20px; margin:10px; border:none; border-radius:20px; cursor
 <div class="container">
 
 <div class="header">
-  <div>
-    <h2>🚫 Insta-Free Tracker</h2>
-    <p>Your discipline dashboard</p>
-  </div>
-  <div class="stats">
-    <div class="stat">CURRENT<br><b id="current">0</b></div>
-    <div class="stat">MAX<br><b id="max">0</b></div>
-  </div>
+  <h2>🚫 Insta-Free Tracker</h2>
 </div>
 
-<div class="heatmap">
-  <div class="scroll">
+<div class="heatmap-wrapper">
+  <div class="heatmap">
     <div class="months" id="months"></div>
     <div id="grid" class="grid"></div>
   </div>
@@ -99,8 +95,6 @@ button { padding:10px 20px; margin:10px; border:none; border-radius:20px; cursor
 
 </div>
 
-<div id="tooltip" class="tooltip"></div>
-
 <script>
 let data = JSON.parse(localStorage.getItem("data")) || {};
 
@@ -112,38 +106,9 @@ function mark(val){
   render();
 }
 
-function currentStreak(){
-  let d=new Date(),count=0;
-  while(true){
-    let k=d.toISOString().split("T")[0];
-    if(data[k]===1){count++; d.setDate(d.getDate()-1);} else break;
-  }
-  return count;
-}
-
-function maxStreak(){
-  let max=0,curr=0;
-  Object.keys(data).sort().forEach(k=>{
-    if(data[k]===1){curr++; max=Math.max(max,curr);} else curr=0;
-  });
-  return max;
-}
-
-function getLevel(streak){
-  if(streak>=20) return "level4";
-  if(streak>=10) return "level3";
-  if(streak>=5) return "level2";
-  return "level1";
-}
-
 function render(){
-  document.getElementById("current").innerText=currentStreak();
-  document.getElementById("max").innerText=maxStreak();
-
   const grid=document.getElementById("grid");
   const months=document.getElementById("months");
-  const tooltip=document.getElementById("tooltip");
-
   grid.innerHTML="";
   months.innerHTML="";
 
@@ -156,44 +121,33 @@ function render(){
     days.push(new Date(d));
   }
 
-  // Align to Sunday start
+  // align to sunday
   while(days[0].getDay()!==0){
     days.unshift(new Date(days[0].getTime()-86400000));
   }
 
-  let streak=0;
   let monthPositions={};
 
   days.forEach((d,i)=>{
     let key=d.toISOString().split("T")[0];
 
     if(d.getDate()===1){
-      monthPositions[i]=d.toLocaleString('default',{month:'short'});
+      monthPositions[Math.floor(i/7)] = d.toLocaleString('default',{month:'short'});
     }
 
     let div=document.createElement("div");
     div.className="cell";
 
-    if(data[key]===1){ streak++; div.classList.add(getLevel(streak)); }
-    else if(data[key]===0){ streak=0; div.classList.add("fail"); }
-    else streak=0;
-
-    div.onmousemove=(e)=>{
-      tooltip.style.display="block";
-      tooltip.style.left=e.pageX+10+"px";
-      tooltip.style.top=e.pageY+10+"px";
-      tooltip.innerText= key + (data[key]===1?" ✅":" ❌");
-    };
-    div.onmouseleave=()=>tooltip.style.display="none";
+    if(data[key]===1) div.classList.add("active");
+    if(data[key]===0) div.classList.add("fail");
 
     grid.appendChild(div);
   });
 
-  // place months exactly above columns
-  Object.keys(monthPositions).forEach(idx=>{
+  Object.keys(monthPositions).forEach(col=>{
     let span=document.createElement("span");
-    span.innerText=monthPositions[idx];
-    span.style.left=(Math.floor(idx/7)*16)+"px";
+    span.innerText=monthPositions[col];
+    span.style.left=(col*16)+"px";
     months.appendChild(span);
   });
 }
